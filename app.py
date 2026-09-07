@@ -1,5 +1,6 @@
 import io
 import html
+import os
 import requests
 import streamlit as st
 
@@ -9,7 +10,7 @@ try:
 except Exception:
     VOICE_AVAILABLE = False
 
-API_BASE = "(https://cinematch-1223-5.onrender.com)"
+API_BASE = os.getenv("API_BASE_URL", "https://cinematch-1223-5.onrender.com")
 TMDB_IMG = "https://image.tmdb.org/t/p/w500"
 
 st.set_page_config(page_title="CineMatch", page_icon="🎬", layout="wide")
@@ -45,7 +46,6 @@ def init_state():
 
 init_state()
 
-
 def goto_home():
     st.session_state.view = "home"
     st.session_state.selected_tmdb_id = None
@@ -54,14 +54,12 @@ def goto_home():
         del st.query_params["id"]
     st.rerun()
 
-
 def goto_details(tmdb_id: int):
     st.session_state.view = "details"
     st.session_state.selected_tmdb_id = int(tmdb_id)
     st.query_params["view"] = "details"
     st.query_params["id"] = str(int(tmdb_id))
     st.rerun()
-
 
 qp_view = st.query_params.get("view")
 qp_id = st.query_params.get("id")
@@ -74,7 +72,6 @@ if qp_id:
     except ValueError:
         pass
 
-
 # ---------------- API HELPERS ----------------
 @st.cache_data(ttl=30)
 def api_get_json(path: str, params: dict | None = None):
@@ -86,13 +83,10 @@ def api_get_json(path: str, params: dict | None = None):
     except Exception as e:
         return None, f"Request failed: {e}"
 
-
 def safe_text(value):
     return html.escape(str(value or ""))
 
-
 def track_movie(details):
-    """Record a movie once per session and learn its genres."""
     if not details:
         return
     mid = int(details.get("tmdb_id"))
@@ -108,7 +102,6 @@ def track_movie(details):
     for g in details.get("genres", []) or []:
         gid = int(g.get("id"))
         st.session_state.genre_scores[gid] = st.session_state.genre_scores.get(gid, 0) + 1
-
 
 def poster_grid(cards, cols=6, key_prefix="grid"):
     if not cards:
@@ -129,20 +122,6 @@ def poster_grid(cards, cols=6, key_prefix="grid"):
                 if st.button("Open", key=f"{key_prefix}_{row_start}_{c}_{tmdb_id}") and tmdb_id:
                     goto_details(tmdb_id)
                 st.markdown(f"<div class='movie-title'>{safe_text(title)}</div>", unsafe_allow_html=True)
-
-
-def to_cards_from_tfidf_items(items):
-    cards = []
-    for x in items or []:
-        tmdb = x.get("tmdb") or {}
-        if tmdb.get("tmdb_id"):
-            cards.append({
-                "tmdb_id": tmdb["tmdb_id"],
-                "title": tmdb.get("title") or x.get("title") or "Untitled",
-                "poster_url": tmdb.get("poster_url"),
-            })
-    return cards
-
 
 def parse_tmdb_search_to_cards(data, keyword: str, limit: int = 24):
     raw_items = []
@@ -176,11 +155,9 @@ def parse_tmdb_search_to_cards(data, keyword: str, limit: int = 24):
         suggestions.append((f"{x['title']} ({year})" if year else x["title"], x["tmdb_id"]))
     return suggestions, final_list[:limit]
 
-
 def top_profile_genres():
     scores = st.session_state.genre_scores
     return [gid for gid, _ in sorted(scores.items(), key=lambda x: x[1], reverse=True)[:5]]
-
 
 # ---------------- SIDEBAR ----------------
 with st.sidebar:
@@ -271,7 +248,7 @@ if st.session_state.view == "home":
                 st.session_state.search_text = voice_text.strip()
                 st.rerun()
         else:
-            st.caption("Voice feature needs the project requirements installed.")
+            st.caption("Voice feature requires speech module.")
 
     if st.session_state.search_text.strip():
         query = st.session_state.search_text.strip()
@@ -295,13 +272,11 @@ if st.session_state.view == "home":
                 poster_grid(cards, cols=grid_cols, key_prefix="search_results")
         st.stop()
 
-    # Mood results are kept until the user changes the search.
     if st.session_state.get("mood_cards"):
         st.markdown(f"### 🎭 Movies for {safe_text(mood)}")
         poster_grid(st.session_state.mood_cards, cols=grid_cols, key_prefix="mood_results")
         st.divider()
 
-    # Personalized feed
     profile_genres = top_profile_genres()
     if profile_genres:
         st.markdown("### ✨ Recommended For You")
@@ -313,7 +288,6 @@ if st.session_state.view == "home":
             poster_grid(personalized, cols=grid_cols, key_prefix="personalized")
         st.divider()
 
-    # Home feed
     st.markdown(f"### 🏠 {home_category.replace('_', ' ').title()}")
     home_cards, err = api_get_json("/home", params={"category": home_category, "limit": 24})
     if err or not home_cards:
@@ -361,7 +335,6 @@ elif st.session_state.view == "details":
         st.markdown("### Overview")
         st.write(data.get("overview") or "No overview available.")
 
-        # Like / dislike builds the personalization profile.
         like_col, dislike_col = st.columns(2)
         with like_col:
             if st.button("❤️ Like this movie", use_container_width=True):
@@ -377,63 +350,30 @@ elif st.session_state.view == "details":
                 st.session_state.liked.pop(tmdb_id, None)
                 st.info("Got it. We will avoid treating this movie as a preference.")
 
-        # Legal / official access links only.
         st.markdown("### 🔗 Official Movie Links")
         links = []
         if data.get("homepage"):
-            links.append(("🎬 Official Website", data["homepage"]))
+            links.append(f"[Official Website]({data['homepage']})")
         if data.get("imdb_url"):
-            links.append(("⭐ IMDb", data["imdb_url"]))
+            links.append(f"[IMDb]({data['imdb_url']})")
         if data.get("tmdb_url"):
-            links.append(("📚 TMDB", data["tmdb_url"]))
+            links.append(f"[TMDB]({data['tmdb_url']})")
         if data.get("watch_url"):
-            links.append(("▶️ Where to Watch", data["watch_url"]))
-        if links:
-            for label, url in links:
-                st.markdown(f"[{label}]({url})")
-            if data.get("watch_providers"):
-                st.caption("Available providers: " + ", ".join(data["watch_providers"]))
-        else:
-            st.caption("No official external link was returned for this movie.")
+            links.append(f"[Where to Watch]({data['watch_url']})")
 
-        trailer, terr = api_get_json(f"/movie/{tmdb_id}/trailer")
-        if not terr and trailer and trailer.get("youtube_url"):
-            st.markdown("### 🎬 Official Trailer")
-            st.video(trailer["youtube_url"])
+        if links:
+            st.markdown(" • ".join(links))
+        else:
+            st.caption("No official links available.")
+
+        if data.get("watch_providers"):
+            st.markdown(f"**Available on:** {', '.join(data['watch_providers'])}")
         st.markdown("</div>", unsafe_allow_html=True)
 
-    if data.get("backdrop_url"):
-        st.markdown("#### Backdrop")
-        st.image(data["backdrop_url"], use_container_width=True)
-
-    st.divider()
-    title = (data.get("title") or "").strip()
-
-    # Recommendation bundle: local TF-IDF when possible + TMDB fallback.
-    if title:
-        bundle, err2 = api_get_json(
-            "/movie/search",
-            params={"query": title, "tfidf_top_n": 12, "genre_limit": 12},
-        )
-        if not err2 and bundle:
-            similar_cards = bundle.get("similar_recommendations") or to_cards_from_tfidf_items(bundle.get("tfidf_recommendations"))
-            st.markdown("### 🧠 Similar Content")
-            st.caption("Local TF-IDF is used when the movie exists in the trained dataset; TMDB recommendations/similar titles fill the gap for newer movies.")
-            poster_grid(similar_cards, cols=grid_cols, key_prefix="details_similar")
-
-            st.markdown("### 🎭 More Like This")
-            poster_grid(bundle.get("genre_recommendations", []), cols=grid_cols, key_prefix="details_genre")
-        else:
-            st.warning("Recommendation service is temporarily unavailable.")
-
-    # Personalization CTA
-    if top_profile_genres():
-        st.divider()
-        st.markdown("### ✨ Because of Your Taste")
-        st.caption("Your recommendations are updated from movies you explore and like.")
-        recs, perr = api_get_json(
-            "/recommend/personalized",
-            params={"genre_ids": ",".join(map(str, top_profile_genres())), "limit": 12},
-        )
-        if not perr:
-            poster_grid(recs, cols=grid_cols, key_prefix="details_personalized")
+    st.markdown("---")
+    st.markdown("### 🎬 Similar & Recommended Movies")
+    similar_recs, serr = api_get_json(f"/recommend/similar", params={"tmdb_id": tmdb_id, "limit": 12})
+    if serr or not similar_recs:
+        st.info("No similar recommendations found.")
+    else:
+        poster_grid(similar_recs, cols=grid_cols, key_prefix="details_similar")
