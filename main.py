@@ -4,6 +4,8 @@ import pickle
 import difflib
 from typing import Optional, List, Dict, Any, Tuple
 from contextlib import asynccontextmanager
+from sklearn.exceptions import InconsistentVersionWarning
+warnings.filterwarnings("ignore", category=InconsistentVersionWarning)
 
 import numpy as np
 import pandas as pd
