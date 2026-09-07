@@ -13,6 +13,4 @@ python-dotenv
 streamlit-mic-recorder
 SpeechRecognition
 pyarrow
-git add .
-git commit -m "Update app"
-git push origin main
+
