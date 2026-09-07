@@ -9,7 +9,7 @@ try:
 except Exception:
     VOICE_AVAILABLE = False
 
-API_BASE = "http://127.0.0.1:8000"
+API_BASE = "(https://cinematch-1223-5.onrender.com)"
 TMDB_IMG = "https://image.tmdb.org/t/p/w500"
 
 st.set_page_config(page_title="CineMatch", page_icon="🎬", layout="wide")
