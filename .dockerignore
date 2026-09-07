@@ -1,0 +1,10 @@
+__pycache__
+*.pyc
+.env
+.env.local
+.git
+.gitignore
+.streamlit/secrets.toml
+node_modules/
+.vscode/
+.idea/
