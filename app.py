@@ -10,7 +10,7 @@ try:
 except Exception:
     VOICE_AVAILABLE = False
 
-API_BASE = os.getenv("API_BASE_URL", "https://cinematch-1223-5.onrender.com")
+API_BASE = os.getenv("API_BASE_URL", "cinematch1223-production.up.railway.app")
 TMDB_IMG = "https://image.tmdb.org/t/p/w500"
 
 st.set_page_config(page_title="CineMatch", page_icon="🎬", layout="wide")
