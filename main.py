@@ -1,5 +1,6 @@
 # Movie Recommendation System - FastAPI backend
 import os
+import warnings
 import pickle
 import difflib
 from typing import Optional, List, Dict, Any, Tuple
