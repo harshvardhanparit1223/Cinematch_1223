@@ -2,7 +2,6 @@ pandas
 numpy
 matplotlib
 seaborn
-scikit-learn==1.8.0
 scikit-learn
 nltk
 streamlit
@@ -14,4 +13,3 @@ python-dotenv
 streamlit-mic-recorder
 SpeechRecognition
 pyarrow
-
