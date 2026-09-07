@@ -1,0 +1,15 @@
+pandas
+numpy
+matplotlib
+seaborn
+scikit-learn
+nltk
+streamlit
+uvicorn
+fastapi
+requests
+httpx
+python-dotenv
+streamlit-mic-recorder
+SpeechRecognition
+pyarrow
