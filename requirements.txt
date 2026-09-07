@@ -15,4 +15,4 @@ SpeechRecognition
 pyarrow
 slowapi==0.1.8          # Rate limiting - prevent API abuse
 httpx==0.24.1           # Async HTTP client - better than requests
-pydantic==2.0.3         # Data validation - secure input handling
+pydantic>=2.5.0         # Data validation - secure input handling
